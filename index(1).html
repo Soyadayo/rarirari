@@ -1,0 +1,232 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and ReactDOM CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <!-- Babel CDN for JSX -->
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.6/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const translations = {
+      ja: {
+        title: "ゲームスタジオ",
+        nav: {
+          home: "ホーム",
+          devlog: "制作日記",
+          sns: "SNS",
+        },
+        gameIntro: {
+          title: "ゲームタイトル",
+          description: "ここにゲームの概要や魅力的な説明を記載します。ジャンル、特徴、プラットフォームなど。",
+          button: "詳細を見る",
+        },
+        devlog: {
+          title: "制作日記",
+          entry1: { title: "日記タイトル 1", content: "2025年5月29日: ゲームのプロトタイプ完成！ここに詳細..." },
+          entry2: { title: "日記タイトル 2", content: "2025年5月28日: 新しいキャラクターデザインを追加..." },
+        },
+        sns: {
+          title: "SNSポスト",
+          post1: { content: "2025年5月29日: 新しいスクリーンショットを公開！ #ゲーム開発", link: "ポストを見る" },
+          post2: { content: "2025年5月28日: テストプレイのフィードバックを募集中！ #インディーゲーム", link: "ポストを見る" },
+        },
+        footer: {
+          copyright: "© 2025 ゲームスタジオ。全著作権所有。",
+          twitter: "Twitter",
+          discord: "Discord",
+          github: "GitHub",
+        },
+      },
+      en: {
+        title: "Game Studio",
+        nav: {
+          home: "Home",
+          devlog: "Dev Log",
+          sns: "SNS",
+        },
+        gameIntro: {
+          title: "Game Title",
+          description: "Describe your game here. Genre, features, platforms, and more.",
+          button: "Learn More",
+        },
+        devlog: {
+          title: "Development Log",
+          entry1: { title: "Log Entry 1", content: "May 29, 2025: Game prototype completed! Details here..." },
+          entry2: { title: "Log Entry 2", content: "May 28, 2025: Added new character designs..." },
+        },
+        sns: {
+          title: "SNS Posts",
+          post1: { content: "May 29, 2025: New screenshots released! #GameDev", link: "View Post" },
+          post2: { content: "May 28, 2025: Seeking feedback for test play! #IndieGame", link: "View Post" },
+        },
+        footer: {
+          copyright: "© 2025 Game Studio. All rights reserved.",
+          twitter: "Twitter",
+          discord: "Discord",
+          github: "GitHub",
+        },
+      },
+    };
+
+    function NavBar({ language, setLanguage }) {
+      const t = translations[language].nav;
+      return (
+        <nav className="bg-gray-800 text-white p-4">
+          <div className="container mx-auto flex justify-between items-center">
+            <h1 className="text-2xl font-bold">{translations[language].title}</h1>
+            <div className="flex items-center space-x-4">
+              <a href="#home" className="hover:text-gray-300">{t.home}</a>
+              <a href="#devlog" className="hover:text-gray-300">{t.devlog}</a>
+              <a href="#sns" className="hover:text-gray-300">{t.sns}</a>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-gray-700 text-white p-1 rounded"
+              >
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+        </nav>
+      );
+    }
+
+    function GameIntro({ language }) {
+      const t = translations[language].gameIntro;
+      return (
+        <section id="home" className="bg-gray-100 py-16">
+          <div className="container mx-auto text-center">
+            <h2 className="text-4xl font-bold mb-4">{t.title}</h2>
+            <p className="text-lg mb-6">{t.description}</p>
+            <img src="https://via.placeholder.com/600x300" alt="Game Image" className="mx-auto mb-6 rounded-lg" />
+            <a href="#" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">{t.button}</a>
+          </div>
+        </section>
+      );
+    }
+
+    function DevLog({ language }) {
+      const t = translations[language].devlog;
+      return (
+        <section id="devlog" className="py-16">
+          <div className="container mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-8">{t.title}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h3 className="text-xl font-semibold mb-2">{t.entry1.title}</h3>
+                <p className="text-gray-600">{t.entry1.content}</p>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <h3 className="text-xl font-semibold mb-2">{t.entry2.title}</h3>
+                <p className="text-gray-600">{t.entry2.content}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function SNSPosts({ language }) {
+      const t = translations[language].sns;
+      return (
+        <section id="sns" className="bg-gray-100 py-16">
+          <div className="container mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-8">{t.title}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-gray-600">{t.post1.content}</p>
+                <a href="#" className="text-blue-600 hover:underline">{t.post1.link}</a>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow">
+                <p className="text-gray-600">{t.post2.content}</p>
+                <a href="#" className="text-blue-600 hover:underline">{t.post2.link}</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Footer({ language }) {
+      const t = translations[language].footer;
+      return (
+        <footer className="bg-gray-800 text-white py-6">
+          <div className="container mx-auto text-center">
+            <p>{t.copyright}</p>
+            <div className="mt-4">
+              <a href="#" className="text-gray-300 hover:text-white mx-2">{t.twitter}</a>
+              <a href="#" className="text-gray-300 hover:text-white mx-2">{t.discord}</a>
+              <a href="#" className="text-gray-300 hover:text-white mx-2">{t.github}</a>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    function App() {
+      const [language, setLanguage] = React.useState('ja');
+
+      return (
+        <div>
+          <NavBar language={language} setLanguage={setLanguage} />
+          <GameIntro language={language} />
+          <DevLog language={language} />
+          <SNSPosts language={language} />
+          <Footer language={language} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
